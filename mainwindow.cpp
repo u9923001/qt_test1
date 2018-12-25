@@ -9,9 +9,9 @@ MainWindow::MainWindow(QWidget *parent)
     _ui->setFixedSize(800,480);
 
     itemModel = new QStandardItemModel();
-    modelMax = 20;
-    modelMin = 0;
-    for(int row=0;row<modelMax;row++){
+    itemIndex.min = 0;
+    itemIndex.size = 20;
+    for(int row=0;row<itemIndex.size;row++){
         QList<QStandardItem*> itemList;
         for(int column=0;column<5;column++){
             QStandardItem *item = new QStandardItem();
@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
             itemList.append(item);
         }
         itemModel->appendRow(itemList);
+        itemIndex.max = row;
     }
 
     view = new QTableView;
@@ -29,7 +30,9 @@ MainWindow::MainWindow(QWidget *parent)
     view->setModel(viewModel);
     view->show();
 
-    for(int row=0;row<6;row++){
+    viewIndex.min = 0;
+    viewIndex.size = 6;
+    for(int row=0;row<viewIndex.size;row++){
         QList<QStandardItem*> itemList;
         for(int column=0;column<5;column++){
             QStandardItem *item = itemModel->item(row,column)->clone();
@@ -37,12 +40,10 @@ MainWindow::MainWindow(QWidget *parent)
         }
         viewModel->appendRow(itemList);
         view->setRowHeight(row, 80);
-        indexMax = row;
-        modelIndexEnd = row;
+        viewIndex.max = row;
     }
-    indexMin = 0;
+
     indexNow = 0;
-    modelIndexStart = 0;
 
     QWidget *widget2 = new QWidget();
     widget2->setFixedSize(this->size());
@@ -87,7 +88,7 @@ void MainWindow::touchPressEvent(QMouseEvent *e)
 QList<QStandardItem*> MainWindow::addItem(int row){
     QList<QStandardItem*> itemList;
     for(int column=0;column<5;column++){
-        QStandardItem *item = itemModel->item(modelIndexEnd,column)->clone();
+        QStandardItem *item = itemModel->item(row,column)->clone();
         itemList.append(item);
     }
     return itemList;
@@ -100,39 +101,35 @@ void MainWindow::touchMoveEvent(QMouseEvent *e)
         int y = nowY -pastY;
         pastY = nowY;
         if(y>0){
-            if(indexNow+1<=indexMax){
-                indexNow++;
-                if(indexNow >= modelIndexEnd){
-                    if(modelIndexEnd+1<modelMax){
+            if(++indexNow>=viewIndex.size-1){
+                if(viewIndex.max+1 <= itemIndex.max){
+                    viewIndex.min++;
+                    viewIndex.max++;
 
-                        modelIndexEnd++;
-                        viewModel->appendRow(addItem(modelIndexEnd));
-                        view->setRowHeight(modelIndexEnd-modelIndexStart, 80);
-                        indexMax++;
-
-                        viewModel->removeRow(0);
-                        modelIndexStart++;
-                    }
+                    viewModel->removeRow(0);
+                    viewModel->appendRow(addItem(viewIndex.max));
+                    view->setRowHeight(viewIndex.size-1, 80);
+                }else{
+                    indexNow--;
                 }
             }
             qDebug()<<"down"<<indexNow;
             view->scrollTo(view->model()->index(indexNow,0));
         }else{
+            if(--indexNow>=viewIndex.min){
+                if(viewIndex.min-1 >= itemIndex.min){
+                    viewIndex.min--;
+                    viewIndex.max--;
+
+                    viewModel->removeRow(viewIndex.size-1);
+                    viewModel->insertRow(0,addItem(viewIndex.min));
+                    view->setRowHeight(0, 80);
+                }
+            }else{
+                indexNow++;
+            }
             qDebug()<<"up"<<indexNow;
             view->scrollTo(view->model()->index(indexNow,0));
-            if(indexNow-1>=indexMin){
-                indexNow--;
-                if(modelIndexStart-1>0){
-
-                    modelIndexStart--;
-                    viewModel->insertRow(0, addItem(modelIndexStart));
-                    view->setRowHeight(0, 80);
-
-                    viewModel->removeRow(modelIndexEnd);
-                    modelIndexEnd--;
-
-                }
-            }
         }
 
         //qDebug()<<"mouseMove"<<e->x()<<" "<<e->y()<<" "<<y;

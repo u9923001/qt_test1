@@ -11,6 +11,11 @@
 #include <QStackedWidget>
 #include "MouseEvent.h"
 
+typedef struct modelIndex{
+    int min;
+    int max;
+    int size;
+}modelIndex;
 
 class MainWindow  : public QWidget
 {
@@ -30,12 +35,8 @@ private:
     int pastY;
     int nowY;
     int indexNow;
-    int indexMax;
-    int indexMin;
-    int modelIndexStart;
-    int modelIndexEnd;
-    int modelMax;
-    int modelMin;
+    modelIndex itemIndex;
+    modelIndex viewIndex;
 public slots:
     void touchPressEvent(QMouseEvent *e);
     void touchMoveEvent(QMouseEvent *e);
